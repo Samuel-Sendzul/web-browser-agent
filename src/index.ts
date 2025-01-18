@@ -1,6 +1,7 @@
 import { chromium, Page } from "playwright";
 import fs from "fs";
 import path from "path";
+import { Agent } from "./domain/agent";
 
 async function markPageUsingScript(page: Page, retries: number, delay: number) {
   const scriptPath = path.resolve(__dirname, "mark-page.js");
@@ -53,8 +54,10 @@ async function markPageUsingScript(page: Page, retries: number, delay: number) {
   const page = await context.newPage();
 
   await page.goto("https://www.google.com");
-  await markPageUsingScript(page, 10, 3000);
-  await page.waitForTimeout(2000);
+
+  const agent = new Agent("type hello world in the search bar", page);
+
+  await agent.nextAction();
 
   await browser.close();
 })();
