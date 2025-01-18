@@ -2,7 +2,7 @@ import { chromium, Page } from "playwright";
 import fs from "fs";
 import path from "path";
 
-async function markPageUsingScript(page: Page) {
+async function markPageUsingScript(page: Page, retries: number, delay: number) {
   const scriptPath = path.resolve(__dirname, "mark-page.js");
   const scriptContent = fs.readFileSync(scriptPath, "utf8");
 
@@ -10,20 +10,21 @@ async function markPageUsingScript(page: Page) {
   await page.evaluate(scriptContent);
 
   let bboxes;
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < retries; i++) {
     try {
       // Call the markPage function defined in the script
       bboxes = await page.evaluate("markPage()");
       break;
     } catch (error) {
       // May be loading...
-      await new Promise((resolve) => setTimeout(resolve, 3000));
+      console.warn("Error during markPage evaluation:", error);
+      await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
 
   const screenshot = await page.screenshot();
-  // Ensure the bboxes don't follow us around
-  //await page.evaluate("unmarkPage()");
+  await page.evaluate("unmarkPage()");
+
   return {
     img: screenshot.toString("base64"),
     bboxes: bboxes,
@@ -52,7 +53,7 @@ async function markPageUsingScript(page: Page) {
   const page = await context.newPage();
 
   await page.goto("https://www.google.com");
-  await markPageUsingScript(page);
+  await markPageUsingScript(page, 10, 3000);
   await page.waitForTimeout(2000);
 
   await browser.close();
